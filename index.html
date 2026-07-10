@@ -1,29 +1,671 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบอำนวยความสะดวกกรรมการฯ</title> <link rel="icon" type="image/png" href="https://img1.pic.in.th/images/11zon_cropped-69920d554baea9a3.png">
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden; 
-        }
-        iframe {
-            border: none;
-            width: 100%;
-            height: 100vh; 
-            display: block;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; }
+    .sw-blue-dark { background-color: #1C3868; }
+    .sw-red { background-color: #E61C2A; }
+    .table-container { overflow-x: auto; background: white; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; }
+    th { background-color: #1C3868; color: white; padding: 1rem; text-align: left; font-size: 0.85rem; white-space: nowrap; border-bottom: 2px solid #0f1d36; cursor: pointer; user-select: none; }
+    th:hover { background-color: #24447f; }
+    th .sort-arrow { font-size: 0.7rem; opacity: 0.6; margin-left: 4px; }
+    td { padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; }
+    .modal { transition: opacity 0.2s ease; z-index: 100; }
+    .input-label { font-size: 0.75rem; font-weight: 700; color: #374151; margin-bottom: 0.25rem; display: block; text-transform: uppercase; }
+    .form-input { width: 100%; border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; border-radius: 0.5rem; transition: border-color 0.2s; background-color: #ffffff; }
+    .form-input:focus { outline: none; border-color: #1C3868; box-shadow: 0 0 0 3px rgba(28, 56, 104, 0.1); }
+
+    .ai-chat-btn { position: fixed; bottom: 20px; right: 20px; background: #1C3868; color: white; border: none; border-radius: 50px; padding: 12px 20px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 9999; transition: transform 0.2s, background 0.2s; }
+    .ai-chat-btn:hover { background: #0f1d36; transform: scale(1.05); }
+    .ai-chat-window { position: fixed; bottom: 80px; right: 20px; width: 380px; height: 600px; max-width: 90vw; max-height: 75vh; border: none; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; z-index: 9999; background: white; }
+
+    .stat-card { background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08); border-left: 5px solid #1C3868; }
+    .data-card { background: white; border-radius: 1rem; padding: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08); }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; }
+      .table-container { box-shadow: none; }
+    }
+  </style>
 </head>
 <body>
 
-    <iframe src="https://script.google.com/macros/s/AKfycbwkLnRg0y9ridYjv5CYoXWhs0LQpgR4Y-PKKecIvv8LRK-JsGHQbl6u5R4ZYYpuhnK1/exec">
-        Browser ของคุณไม่รองรับ iframe
-    </iframe>
+  <!-- ===================== APP ===================== -->
+  <div id="app">
+    <nav class="sw-blue-dark text-white p-4 shadow-2xl sticky top-0 z-40">
+      <div class="container mx-auto flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <img src="https://img1.pic.in.th/images/11zon_cropped-69920d554baea9a3.png" class="h-10 bg-white rounded-full p-1 shadow-md">
+          <span class="font-bold text-lg hidden md:inline">ระบบอำนวยความสะดวกกรรมการฯ</span> <link rel="icon" type="image/png" href="https://img1.pic.in.th/images/11zon_cropped-69920d554baea9a3.png">
+        </div>
+        <div class="flex items-center space-x-3 md:space-x-6 text-xs md:text-sm font-bold uppercase">
+          <button onclick="changeSection('other')" class="hover:text-red-400 transition-colors">โครงการทั่วไป</button>
+          <button onclick="changeSection('elearning')" class="hover:text-red-400 transition-colors">E-learning</button>
+          <button onclick="changeSection('comment')" class="hover:text-red-400 transition-colors">ปัญหา/ข้อเสนอ</button>
+        </div>
+      </div>
+    </nav>
 
+    <div class="container mx-auto p-4 md:p-8">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div>
+          <h2 id="sectionTitle" class="text-3xl font-bold text-gray-800">โครงการที่พบบ่อย</h2>
+          <p class="text-gray-500 text-sm mt-1">จัดการและตรวจสอบข้อมูลคะแนนกิจกรรม</p>
+        </div>
+        <div class="flex gap-2 no-print">
+          <button onclick="exportCSV()" class="bg-white border border-gray-300 text-gray-700 px-5 py-3 rounded-full font-bold shadow hover:bg-gray-100 transition text-sm">⬇ Export</button>
+          <button onclick="window.print()" class="bg-white border border-gray-300 text-gray-700 px-5 py-3 rounded-full font-bold shadow hover:bg-gray-100 transition text-sm">🖨 พิมพ์</button>
+          <button onclick="openFormModal()" class="sw-red text-white px-10 py-3 rounded-full font-bold shadow-xl hover:bg-red-700 transition transform hover:-translate-y-1 active:scale-95">+ เพิ่มข้อมูลใหม่</button>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl shadow-sm mb-6 flex items-center border border-gray-200 no-print">
+        <svg class="h-5 w-5 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <input type="text" id="mainSearch" onkeyup="onSearchInput()" placeholder="พิมพ์ชื่อโครงการ หรือชื่อผู้บันทึก เพื่อค้นหา..." class="w-full focus:outline-none text-lg ml-3">
+      </div>
+
+      <div id="dataContainer"></div>
+    </div>
+  </div>
+
+  <!-- ===================== FORM MODAL ===================== -->
+  <div id="modalForm" class="modal opacity-0 pointer-events-none fixed inset-0 flex items-center justify-center p-4 z-50">
+    <div class="modal-overlay absolute inset-0 bg-gray-900 opacity-60" onclick="closeModal()"></div>
+    <div class="relative bg-white w-full max-w-4xl mx-auto rounded-2xl shadow-2xl flex flex-col overflow-hidden" style="max-height: 85vh;">
+      <div class="flex-none px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white z-10">
+        <h3 id="modalTitle" class="text-xl md:text-2xl font-bold text-sw-blue-dark">บันทึกข้อมูล</h3>
+        <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-red-500 text-3xl font-bold leading-none">&times;</button>
+      </div>
+      <form id="activeForm" class="flex flex-col flex-1 min-h-0">
+        <input type="hidden" name="rowId" id="rowId">
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
+          <div id="formFields" class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5"></div>
+        </div>
+        <div class="flex-none px-6 py-4 border-t border-gray-200 bg-white flex justify-end space-x-3 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <button type="button" onclick="closeModal()" class="text-gray-600 font-bold px-6 py-2 rounded-lg hover:bg-gray-200 transition">ยกเลิก</button>
+          <button type="submit" id="submitBtn" class="sw-blue-dark text-white px-8 py-2 rounded-lg font-bold shadow-md hover:bg-blue-900 transition transform active:scale-95">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== DETAIL VIEW MODAL ===================== -->
+  <div id="detailModal" class="modal opacity-0 pointer-events-none fixed inset-0 flex items-center justify-center p-4 z-50">
+    <div class="modal-overlay absolute inset-0 bg-gray-900 opacity-60" onclick="closeDetailModal()"></div>
+    <div class="relative bg-white w-full max-w-2xl mx-auto rounded-2xl shadow-2xl flex flex-col overflow-hidden" style="max-height: 85vh;">
+      <div class="flex-none px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white z-10">
+        <h3 class="text-xl md:text-2xl font-bold text-sw-blue-dark">รายละเอียดข้อมูล</h3>
+        <button type="button" onclick="closeDetailModal()" class="text-gray-400 hover:text-red-500 text-3xl font-bold leading-none">&times;</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
+        <div id="detailFields"></div>
+      </div>
+      <div class="flex-none px-6 py-4 border-t border-gray-200 bg-white flex justify-end space-x-3 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <button type="button" onclick="closeDetailModal()" class="text-gray-600 font-bold px-6 py-2 rounded-lg hover:bg-gray-200 transition">ปิด</button>
+        <button type="button" id="detailEditBtn" class="sw-blue-dark text-white px-8 py-2 rounded-lg font-bold shadow-md hover:bg-blue-900 transition transform active:scale-95">แก้ไขข้อมูลนี้</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="ai-chat-btn no-print" onclick="toggleChat()">💬 คุยกับผู้ช่วย AI สภาฯ</button>
+  <iframe src="https://script.google.com/macros/s/AKfycbwBuYpJZUv2USdBcNYzY0eZ2SQxgu9Kl2SEfWoLrwuZCo5D_UoBtPJvjn5770fo9wld6Q/exec" class="ai-chat-window no-print" id="aiChatFrame"></iframe>
+
+  <script>
+    /* ==================================================================
+     *  API CONFIG
+     * ================================================================== */
+
+    // แก้ URL นี้เป็น URL ของ Apps Script Web App ที่ deploy แล้ว (ลงท้ายด้วย /exec)
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwkLnRg0y9ridYjv5CYoXWhs0LQpgR4Y-PKKecIvv8LRK-JsGHQbl6u5R4ZYYpuhnK1/exec';
+
+    // เรียก API แบบอ่านข้อมูล (GET) — คืนค่าเป็น Promise ที่ resolve เป็น {status, data} หรือ {status, message}
+    function apiGet(params) {
+      var qs = Object.keys(params).map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+      return fetch(API_URL + '?' + qs)
+        .then(function(res) { return res.json(); })
+        .catch(function(err) { return { status: 'error', message: 'ไม่สามารถเชื่อมต่อ API ได้: ' + err.message }; });
+    }
+
+    // เรียก API แบบเขียน/แก้ไข/ลบข้อมูล (POST)
+    // สำคัญ: ห้ามตั้ง header 'Content-Type: application/json' เอง เพราะจะทำให้เบราว์เซอร์ยิง
+    // CORS preflight (OPTIONS) ซึ่ง Apps Script เว็บแอปตอบไม่ได้ ปล่อยให้ browser ใช้
+    // text/plain เป็นค่าเริ่มต้น แล้วฝั่ง server จะ JSON.parse เอง
+    function apiPost(payload) {
+      return fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) })
+        .then(function(res) { return res.json(); })
+        .catch(function(err) { return { status: 'error', message: 'ไม่สามารถเชื่อมต่อ API ได้: ' + err.message }; });
+    }
+
+    /* ==================================================================
+     *  UTILITIES
+     * ================================================================== */
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function getVal(item, key) { return (item && item[key]) ? item[key] : ''; }
+
+    function debounce(fn, delay) {
+      var timer = null;
+      return function() {
+        var args = arguments, ctx = this;
+        clearTimeout(timer);
+        timer = setTimeout(function() { fn.apply(ctx, args); }, delay);
+      };
+    }
+
+    var thaiMonths = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+
+    function thaiDateParts(isoStr) {
+      if (!isoStr) return null;
+      var d = new Date(isoStr + 'T00:00:00');
+      if (isNaN(d.getTime())) return null;
+      return { day: d.getDate(), month: thaiMonths[d.getMonth()], year: d.getFullYear() + 543 };
+    }
+
+    function formatDateRangeThai(startIso, endIso) {
+      var s = thaiDateParts(startIso);
+      if (!s) return '';
+      var e = endIso ? thaiDateParts(endIso) : null;
+      if (!e || (e.day === s.day && e.month === s.month && e.year === s.year)) {
+        return s.day + ' ' + s.month + ' ' + s.year;
+      }
+      if (e.month === s.month && e.year === s.year) {
+        return s.day + '-' + e.day + ' ' + e.month + ' ' + e.year;
+      }
+      return s.day + ' ' + s.month + ' ' + s.year + ' - ' + e.day + ' ' + e.month + ' ' + e.year;
+    }
+
+    function applyDateRange() {
+      var start = document.getElementById('dateRangeStart').value;
+      var end = document.getElementById('dateRangeEnd').value;
+      var formatted = formatDateRangeThai(start, end);
+      if (formatted) document.getElementById('val_วันที่จัดโครงการ').value = formatted;
+    }
+
+    /* ==================================================================
+     *  AI CHAT WIDGET
+     * ================================================================== */
+
+    function toggleChat() {
+      var chat = document.getElementById("aiChatFrame");
+      chat.style.display = (chat.style.display === "none" || chat.style.display === "") ? "block" : "none";
+    }
+
+    /* ==================================================================
+     *  APP STATE
+     * ================================================================== */
+
+    var currentSection = 'other';
+    var masterData = [];
+    var filteredData = [];
+    var sortState = { key: null, dir: 1 };
+
+    window.onload = function() {
+      changeSection('other');
+    };
+
+    function changeSection(section) {
+      currentSection = section;
+      sortState = { key: null, dir: 1 };
+      document.getElementById('mainSearch').value = '';
+      var titles = { 'other': 'โครงการที่พบบ่อย', 'elearning': 'E-learning ที่พบบ่อย', 'comment': 'ปัญหาและข้อเสนอ' };
+      document.getElementById('sectionTitle').innerText = titles[section];
+      loadContent();
+    }
+
+    function loadContent() {
+      var container = document.getElementById('dataContainer');
+      container.innerHTML = '<div class="text-center py-24"><div class="animate-spin inline-block w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div><p class="text-gray-500 italic text-xl">กำลังดึงข้อมูลเข้าตาราง...</p></div>';
+      var sheetMapping = { 'other': 'other', 'elearning': 'E-learning', 'comment': 'Comment' };
+
+      apiGet({ action: 'getData', sheet: sheetMapping[currentSection] }).then(function(res) {
+        if (res.status === 'success') {
+          masterData = res.data;
+          filteredData = res.data;
+          renderTable(filteredData);
+        } else {
+          container.innerHTML = '<div class="bg-red-50 text-red-600 p-10 rounded-2xl text-center font-bold">เกิดข้อผิดพลาด: ' + escapeHtml(res.message) + '</div>';
+        }
+      });
+    }
+
+    /* ==================================================================
+     *  SEARCH / SORT
+     * ================================================================== */
+
+    var onSearchInput = debounce(function() { filterContent(); }, 300);
+
+    function filterContent() {
+      var q = document.getElementById('mainSearch').value.toLowerCase();
+      filteredData = masterData.filter(function(i) {
+        return JSON.stringify(i).toLowerCase().indexOf(q) > -1;
+      });
+      applySort();
+    }
+
+    function sortBy(key) {
+      if (sortState.key === key) { sortState.dir *= -1; } else { sortState = { key: key, dir: 1 }; }
+      applySort();
+    }
+
+    function applySort() {
+      var key = sortState.key, dir = sortState.dir;
+      var data = filteredData.slice();
+      if (key) {
+        data.sort(function(a, b) {
+          var av = getVal(a, key), bv = getVal(b, key);
+          var an = parseFloat(av), bn = parseFloat(bv);
+          var cmp;
+          if (!isNaN(an) && !isNaN(bn) && av !== '' && bv !== '') { cmp = an - bn; }
+          else { cmp = String(av).localeCompare(String(bv), 'th'); }
+          return cmp * dir;
+        });
+      }
+      renderTable(data);
+    }
+
+    /* ==================================================================
+     *  TABLE / CARD RENDERING
+     * ================================================================== */
+
+    var COLUMN_DEFS = {
+      other: [
+        { key: 'ลำดับที่', label: 'ลำดับ', align: 'text-center' },
+        { key: 'ชื่อหน่วยงาน', label: 'หน่วยงาน' },
+        { key: 'ชื่อโครงการ', label: 'ชื่อโครงการ' },
+        { key: 'ประเภทกิจกรรม', label: 'ประเภทกิจกรรม' },
+        { key: 'วันที่จัดโครงการ', label: 'วันที่' },
+        { key: 'ชั่วโมง', label: 'ชม.', align: 'text-center' },
+        { key: 'คะแนน หมวด 1', label: 'ม.1', align: 'text-center' },
+        { key: 'คะแนน หมวด 2', label: 'ม.2', align: 'text-center' },
+        { key: 'ไฟล์ประกอบ', label: 'ไฟล์แนบ', align: 'text-center', noSort: true },
+        { key: 'ผู้บันทึก', label: 'ผู้บันทึก' }
+      ],
+      elearning: [
+        { key: 'ภาพประกอบ', label: 'ภาพ', align: 'text-center', noSort: true },
+        { key: 'หน่วยจัด/องค์กร', label: 'องค์กร' },
+        { key: 'หัวข้อ/หลักสูตรที่เรียน', label: 'หัวข้อ' },
+        { key: 'คะแนน หมวด 1', label: 'ม.1', align: 'text-center' },
+        { key: 'คะแนน หมวด 2', label: 'ม.2', align: 'text-center' },
+        { key: 'link หลักสูตร', label: 'ลิงก์', align: 'text-center', noSort: true },
+        { key: 'ผู้บันทึก', label: 'ผู้บันทึก' }
+      ],
+      comment: [
+        { key: 'สถานะการดำเนินงาน', label: 'สถานะ', align: 'text-center' },
+        { key: 'ปัญหาและข้อสังเกตในการตรวจ', label: 'ปัญหา/ข้อสังเกต' },
+        { key: 'ข้อเสนอ', label: 'ข้อเสนอ' },
+        { key: 'เหตุผล', label: 'เหตุผล' },
+        { key: 'ผู้บันทึก', label: 'ผู้บันทึก', align: 'text-center' }
+      ]
+    };
+
+    function showImage(url) {
+      Swal.fire({ imageUrl: url, imageWidth: '90%', imageAlt: 'ภาพประกอบ', showCloseButton: true, confirmButtonText: 'ปิด', confirmButtonColor: '#1C3868' });
+    }
+
+    function cellContent(item, key) {
+      var val = getVal(item, key);
+      if (key === 'ไฟล์ประกอบ') return val ? '<a href="' + escapeHtml(val) + '" target="_blank" class="text-blue-600 font-bold underline">เปิดไฟล์</a>' : '-';
+      if (key === 'ภาพประกอบ') return val ? '<img src="' + escapeHtml(val) + '" onclick="showImage(\'' + escapeHtml(val).replace(/'/g, "\\'") + '\')" class="h-10 w-10 object-cover rounded shadow-sm mx-auto cursor-pointer hover:opacity-75">' : '-';
+      if (key === 'link หลักสูตร') return val ? '<a href="' + escapeHtml(val) + '" target="_blank" class="text-blue-600 font-bold underline">คลิก</a>' : '-';
+      if (key === 'ภาพปัญหา') return val ? '<a href="' + escapeHtml(val) + '" target="_blank" class="text-blue-600 font-bold underline">เปิดไฟล์แนบ</a>' : '-';
+      if (key === 'สถานะการดำเนินงาน') {
+        var status = val || 'รอดำเนินการ';
+        var sColor = status === 'ปรับปรุงแล้ว' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700';
+        return '<span class="px-2 py-1 rounded-md font-bold text-[10px] ' + sColor + '">' + escapeHtml(status) + '</span>';
+      }
+      if (key === 'คะแนน หมวด 1' || key === 'คะแนน หมวด 2') return escapeHtml(val || '0');
+      return escapeHtml(val) || '-';
+    }
+
+    function renderTable(data) {
+      var container = document.getElementById('dataContainer');
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="text-center py-20 text-gray-400 italic text-xl font-bold bg-white rounded-2xl border-2 border-dashed">ไม่พบข้อมูลในระบบ</div>';
+        return;
+      }
+
+      var cols = COLUMN_DEFS[currentSection];
+
+      // ---- ตาราง (จอใหญ่) ----
+      var html = '<div class="table-container hidden md:block"><table><thead><tr>';
+      cols.forEach(function(c) {
+        var arrow = sortState.key === c.key ? (sortState.dir === 1 ? '▲' : '▼') : '';
+        var sortAttr = c.noSort ? '' : ' onclick="sortBy(\'' + c.key + '\')"';
+        html += '<th' + sortAttr + '>' + escapeHtml(c.label) + (arrow ? '<span class="sort-arrow">' + arrow + '</span>' : '') + '</th>';
+      });
+      html += '<th class="text-center">จัดการ</th></tr></thead><tbody class="text-xs md:text-sm text-gray-700">';
+
+      data.forEach(function(item) {
+        html += '<tr class="hover:bg-blue-50 transition border-b">';
+        cols.forEach(function(c) {
+          var align = c.align || '';
+          var bold = (c.key === 'ชื่อโครงการ' || c.key === 'หัวข้อ/หลักสูตรที่เรียน') ? 'font-bold text-gray-900' : '';
+          html += '<td class="p-3 ' + align + ' ' + bold + '">' + cellContent(item, c.key) + '</td>';
+        });
+        html += '<td class="p-3 text-center whitespace-nowrap">' +
+                  '<button type="button" onclick="viewItem(' + item.rowId + ')" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg font-bold hover:bg-gray-200 mr-2 transition">ดู</button>' +
+                  '<button type="button" onclick="editItem(' + item.rowId + ')" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200 mr-2 transition">แก้ไข</button>' +
+                  '<button type="button" onclick="confirmDelete(' + item.rowId + ')" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-200 transition">ลบ</button>' +
+                '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+
+      // ---- การ์ด (มือถือ) ----
+      var cardsHtml = '<div class="md:hidden space-y-3">';
+      data.forEach(function(item) {
+        cardsHtml += '<div class="data-card">';
+        cols.forEach(function(c) {
+          cardsHtml += '<div class="flex justify-between items-start py-1 border-b border-gray-100 last:border-0">' +
+                          '<span class="text-[10px] font-bold text-gray-400 uppercase mr-3">' + escapeHtml(c.label) + '</span>' +
+                          '<span class="text-sm text-right">' + cellContent(item, c.key) + '</span>' +
+                        '</div>';
+        });
+        cardsHtml += '<div class="flex justify-end gap-2 mt-3">' +
+                        '<button type="button" onclick="viewItem(' + item.rowId + ')" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg font-bold hover:bg-gray-200 transition text-xs">ดู</button>' +
+                        '<button type="button" onclick="editItem(' + item.rowId + ')" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200 transition text-xs">แก้ไข</button>' +
+                        '<button type="button" onclick="confirmDelete(' + item.rowId + ')" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-200 transition text-xs">ลบ</button>' +
+                      '</div></div>';
+      });
+      cardsHtml += '</div>';
+
+      container.innerHTML = html + cardsHtml;
+    }
+
+    /* ==================================================================
+     *  DETAIL VIEW
+     * ================================================================== */
+
+    var DETAIL_FIELDS = {
+      other: [
+        { key: 'ลำดับที่', label: 'ลำดับที่' },
+        { key: 'ชื่อหน่วยงาน', label: 'ชื่อหน่วยงาน' },
+        { key: 'ชื่อโครงการ', label: 'ชื่อโครงการ' },
+        { key: 'รุ่นที่/ครั้งที่', label: 'รุ่นที่/ครั้งที่' },
+        { key: 'ประเภทกิจกรรม', label: 'ประเภทกิจกรรม' },
+        { key: 'วันที่จัดโครงการ', label: 'วันที่จัดโครงการ' },
+        { key: 'ชั่วโมง', label: 'ชั่วโมง' },
+        { key: 'คะแนน หมวด 1', label: 'คะแนน หมวด 1' },
+        { key: 'คะแนน หมวด 2', label: 'คะแนน หมวด 2' },
+        { key: 'ผู้บันทึก', label: 'ผู้บันทึก' },
+        { key: 'หมายเหตุ', label: 'หมายเหตุ' },
+        { key: 'ไฟล์ประกอบ', label: 'ไฟล์แนบ' },
+        { key: 'วันที่บันทึก', label: 'วันที่บันทึก' }
+      ],
+      elearning: [
+        { key: 'หน่วยจัด/องค์กร', label: 'หน่วยจัด/องค์กร' },
+        { key: 'หัวข้อ/หลักสูตรที่เรียน', label: 'หัวข้อ/หลักสูตรที่เรียน' },
+        { key: 'คะแนน หมวด 1', label: 'คะแนน หมวด 1' },
+        { key: 'คะแนน หมวด 2', label: 'คะแนน หมวด 2' },
+        { key: 'link หลักสูตร', label: 'ลิงก์หลักสูตร' },
+        { key: 'ภาพประกอบ', label: 'ภาพประกอบ' },
+        { key: 'ผู้บันทึก', label: 'ผู้บันทึก' },
+        { key: 'หมายเหตุ', label: 'หมายเหตุ' },
+        { key: 'วันที่บันทึก', label: 'วันที่บันทึก' }
+      ],
+      comment: [
+        { key: 'สถานะการดำเนินงาน', label: 'สถานะ' },
+        { key: 'ปัญหาและข้อสังเกตในการตรวจ', label: 'ปัญหาและข้อสังเกต' },
+        { key: 'ข้อเสนอ', label: 'ข้อเสนอ' },
+        { key: 'เหตุผล', label: 'เหตุผล' },
+        { key: 'ผู้บันทึก', label: 'ผู้บันทึก' },
+        { key: 'ภาพปัญหา', label: 'ภาพปัญหาที่แนบ' },
+        { key: 'วันที่บันทึก', label: 'วันที่บันทึก' }
+      ]
+    };
+
+    function viewItem(id) {
+      var item = masterData.find(function(i) { return i.rowId == id; });
+      if (!item) return;
+
+      var fields = DETAIL_FIELDS[currentSection];
+      var html = fields.map(function(f) {
+        var content = cellContent(item, f.key);
+        if (!content || content === '-') content = '<span class="text-gray-300">— ไม่มีข้อมูล —</span>';
+        return '<div class="py-2.5 border-b border-gray-100 last:border-0">' +
+                 '<p class="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wide">' + escapeHtml(f.label) + '</p>' +
+                 '<div class="text-sm text-gray-800 whitespace-pre-wrap">' + content + '</div>' +
+               '</div>';
+      }).join('');
+
+      document.getElementById('detailFields').innerHTML = html;
+      document.getElementById('detailEditBtn').onclick = function() { closeDetailModal(); editItem(id); };
+      document.getElementById('detailModal').classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    /* ==================================================================
+     *  DELETE
+     * ================================================================== */
+
+    function confirmDelete(rowId) {
+      Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: "ข้อมูลนี้จะถูกลบออกจากระบบถาวร",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#E61C2A',
+        cancelButtonColor: '#9ca3af',
+        confirmButtonText: 'ลบเลย',
+        cancelButtonText: 'ยกเลิก'
+      }).then(function(result) {
+        if (result.isConfirmed) {
+          Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+          var sheetMapping = { 'other': 'other', 'elearning': 'E-learning', 'comment': 'Comment' };
+
+          apiPost({ action: 'deleteItem', sheetName: sheetMapping[currentSection], rowId: rowId }).then(function(res) {
+            if (res.status === 'success') { Swal.fire('สำเร็จ', res.message, 'success'); loadContent(); }
+            else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+          });
+        }
+      });
+    }
+
+    /* ==================================================================
+     *  FORM MODAL
+     * ================================================================== */
+
+    var ACTIVITY_GROUPS = [
+      { label: 'หมวด 1: การพัฒนาความรู้ทางวิชาการ', items: [
+        "1.1 การเข้าร่วมฟังบรรยาย อภิปราย สัมมนา อบรมฟื้นฟูเสริมความรู้ทางวิชาการ ทั้งรูปแบบ Onsite และ Online"
+      ]},
+      { label: 'หมวด 2: ผลงานและกิจกรรมทางวิชาชีพ', items: [
+        "2.1 การตีพิมพ์บทความในสื่อต่าง ๆ",
+        "2.2 การแต่งตำรา หรือหนังสือที่เกี่ยวข้องกับการพัฒนาการศึกษาและงานวิชาชีพสังคมสงเคราะห์ไม่น้อยกว่า 50 หน้า (A4) ใน 1 เล่ม",
+        "2.3 การเสนอผลงานวิชาการ",
+        "2.4 การกลั่นกรองตำรา/หนังสือ หรือบทความโดยบรรณาธิการ (Editorial peer reviewers)  (กรณีเป็นบรรณาธิการ)",
+        "2.4 การกลั่นกรองตำรา/หนังสือ หรือบทความโดยบรรณาธิการ (Editorial peer reviewers)  (กรณีเป็นผู้กลั่นกรองบทความ)",
+        "2.5 การวิจัย",
+        "2.6 การจัดการความรู้ (Knowledge Management)",
+        "2.7 การอ่านผลงานเพื่อประเมินตำแหน่งทางวิชาการหรือเพื่อเลื่อนระดับความก้าวหน้าของตำแหน่ง",
+        "2.8 กรรมการผู้ทรงคุณวุฒิภายนอกสถาบันในการสอบป้องกันวิทยานิพนธ์/ดุษฎีนิพนธ์ หรือตรวจสอบเครื่องมือวิจัย",
+        "2.9 เป็นวิทยากรหรือผู้อภิปรายร่วมในกิจกรรมประเภทที่ 1.1",
+        "2.10 เป็นผู้นิเทศงานนักศึกษา ฝึกภาคปฏิบัติในหลักสูตรสาขาสังคมสงเคราะห์ศาสตร์ ของสถาบันการศึกษา",
+        "2.11 เป็นผู้นิเทศงานนักศึกษาฝึกภาคปฏิบัติในหลักสูตรสหสาขา เพื่อการเรียนรู้บทบาทการทำงานด้านสังคมสงเคราะห์",
+        "2.12 เป็นอาจารย์พิเศษ/วิทยากร บรรยายในเนื้อหาวิชาที่เกี่ยวข้องกับงานสังคมสงเคราะห์ ในสถาบันอุดมศึกษา",
+        "2.13 เป็นที่ปรึกษา/ผู้ทรงคุณวุฒิ/ประธาน/กรรมการ/อนุกรรมการ/คณะทำงาน ในระดับหน่วยงาน ระดับท้องถิ่น ระดับจังหวัด ระดับภาค ระดับกรมระดับชาติ หรือ ระดับนานาชาติ ที่เกี่ยวข้องกับวิชาชีพสังคมสงเคราะห์ (ที่ไม่ใช่งานประจำ)",
+        "2.14 โครงการบริการวิชาการด้านการสังคมสงเคราะห์ สำหรับประชาชน หรือโครงการพัฒนาระบบ หรือกิจกรรมการจัดบริการสังคมสงเคราะห์ร่วมกับหน่วยงานภายนอกเพื่อให้บริการประชาชนร่วมกัน",
+        "2.15 สร้างหรือพัฒนานวัตกรรม แนวทางการปฏิบัติงาน หรือ มาตรฐานหรือคู่มือการปฏิบัติงานที่เกี่ยวกับงานสังคมสงเคราะห์",
+        "2.16 การสรุปบทเรียนการทำงานด้วยการเขียนรายงานผลการปฏิบัติงาน (Case Review)",
+        "2.17 การเข้าร่วมกิจกรรมจิตอาสาในการทำงานเป็นอาสาสมัครของสภาวิชาชีพสังคมสงเคราะห์",
+        "2.18 ผู้ได้รับรางวัลดีเด่น หรือประกาศเกียรติคุณ ในระดับนานาชาติ ระดับชาติ ระดับจังหวัด หรือระดับหน่วยงานทางวิชาชีพสังคมสงเคราะห์"
+      ]},
+      { label: 'หมวด 3: การศึกษาต่อ', items: [
+        "3.1 การเข้าศึกษาในหลักสูตรสาขาสังคมสงเคราะห์ศาสตร์ ในระดับบัณฑิตศึกษา ของสถาบันการศึกษาที่สภาฯ ให้การรับรอง",
+        "3.2 การเข้าศึกษาในหลักสูตรสหสาขา ในระดับบัณฑิตศึกษาของสถาบันการศึกษา",
+        "3.3 การเข้าศึกษาในหลักสูตรการศึกษา การเพิ่มพูนความรู้ หรือหลักสูตรฝึกอบรมด้านสังคมสงเคราะห์ศาสตร์ระยะสั้น"
+      ]},
+      { label: 'หมวด 4: การเรียนรู้ด้วยตนเอง', items: [
+        "4.1 การศึกษาหรือการเรียนรู้หลักสูตร/วิชาการด้านสังคมสงเคราะห์ ด้วยตนเอง ผ่านเทคโนโลยีสารสนเทศ เช่น E-learning E-book"
+      ]}
+    ];
+
+    function editItem(id) {
+      var item = masterData.find(function(i) { return i.rowId == id; });
+      openFormModal(item);
+    }
+
+    function openFormModal(item) {
+      var fields = document.getElementById('formFields');
+      document.getElementById('rowId').value = item ? item.rowId : '';
+      document.getElementById('modalTitle').innerText = item ? 'แก้ไขข้อมูล' : 'เพิ่มข้อมูลใหม่';
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('submitBtn').innerText = 'บันทึกข้อมูล';
+      var html = '';
+
+      if (currentSection === 'other') {
+        var currentAct = getVal(item, 'ประเภทกิจกรรม');
+        var optHtml = '<option value="">-- โปรดเลือกประเภทกิจกรรม --</option>';
+        ACTIVITY_GROUPS.forEach(function(group) {
+          optHtml += '<optgroup label="' + escapeHtml(group.label) + '">';
+          group.items.forEach(function(opt) {
+            var isSelected = (currentAct === opt) ? 'selected' : '';
+            optHtml += '<option value="' + escapeHtml(opt) + '" ' + isSelected + '>' + escapeHtml(opt) + '</option>';
+          });
+          optHtml += '</optgroup>';
+        });
+
+        var seqDisplay = item ? ('<div><label class="input-label text-blue-800">ลำดับที่</label>' +
+          '<input type="text" value="' + escapeHtml(getVal(item, 'ลำดับที่')) + '" class="form-input bg-gray-100" disabled></div>') :
+          '<div><label class="input-label text-blue-800">ลำดับที่</label><input type="text" value="ระบบจะออกให้อัตโนมัติ" class="form-input bg-gray-100 italic text-gray-400" disabled></div>';
+
+        html = '<div class="md:col-span-2"><label class="input-label">ประเภทกิจกรรม <span class="text-red-500">*</span></label><select name="ประเภทกิจกรรม" class="form-input bg-blue-50 border-blue-200" required>' + optHtml + '</select></div>' +
+               seqDisplay +
+               '<input type="hidden" name="ลำดับที่" value="' + escapeHtml(getVal(item, 'ลำดับที่')) + '">' +
+               '<div><label class="input-label">ชื่อหน่วยงาน <span class="text-red-500">*</span></label><input type="text" name="ชื่อหน่วยงาน" value="' + escapeHtml(getVal(item, 'ชื่อหน่วยงาน')) + '" class="form-input" required></div>' +
+               '<div class="md:col-span-2"><label class="input-label">ชื่อโครงการ <span class="text-red-500">*</span></label><input type="text" name="ชื่อโครงการ" value="' + escapeHtml(getVal(item, 'ชื่อโครงการ')) + '" class="form-input" required></div>' +
+               '<div><label class="input-label">รุ่นที่/ครั้งที่</label><input type="text" name="รุ่นที่/ครั้งที่" value="' + escapeHtml(getVal(item, 'รุ่นที่/ครั้งที่')) + '" class="form-input"></div>' +
+               '<div class="md:col-span-2 bg-blue-50 border border-blue-100 rounded-lg p-3">' +
+                 '<label class="input-label">วันที่จัดโครงการ <span class="text-red-500">*</span></label>' +
+                 '<div class="grid grid-cols-2 gap-2 mb-2">' +
+                   '<input type="date" id="dateRangeStart" onchange="applyDateRange()" class="form-input text-xs">' +
+                   '<input type="date" id="dateRangeEnd" onchange="applyDateRange()" class="form-input text-xs">' +
+                 '</div>' +
+                 '<input type="text" name="วันที่จัดโครงการ" id="val_วันที่จัดโครงการ" value="' + escapeHtml(getVal(item, 'วันที่จัดโครงการ')) + '" class="form-input" placeholder="เช่น 1-3 พ.ค. 2567 (หรือเลือกจากปฏิทินด้านบน)" required>' +
+               '</div>' +
+               '<div><label class="input-label">ชั่วโมง</label><input type="number" step="0.5" min="0" name="ชั่วโมง" value="' + escapeHtml(getVal(item, 'ชั่วโมง')) + '" class="form-input"></div>' +
+               '<div><label class="input-label">ผู้บันทึก <span class="text-red-500">*</span></label><input type="text" name="ผู้บันทึก" value="' + escapeHtml(getVal(item, 'ผู้บันทึก')) + '" class="form-input" required></div>' +
+               '<div><label class="input-label text-blue-600">คะแนน หมวด 1</label><input type="number" step="0.01" min="0" name="คะแนน หมวด 1" value="' + escapeHtml(getVal(item, 'คะแนน หมวด 1')) + '" class="form-input border-blue-200"></div>' +
+               '<div><label class="input-label text-red-600">คะแนน หมวด 2</label><input type="number" step="0.01" min="0" name="คะแนน หมวด 2" value="' + escapeHtml(getVal(item, 'คะแนน หมวด 2')) + '" class="form-input border-red-200"></div>' +
+               '<div class="md:col-span-2"><label class="input-label text-green-700">อัปโหลดไฟล์ประกอบ (PDF/รูป ไม่เกิน 3MB)</label><input type="file" accept="image/*,application/pdf" onchange="encodeFile(this, \'ไฟล์ประกอบ\')" class="form-input text-xs"><input type="hidden" name="ไฟล์ประกอบ" id="val_ไฟล์ประกอบ" value="' + escapeHtml(getVal(item, 'ไฟล์ประกอบ')) + '">' +
+               (getVal(item, 'ไฟล์ประกอบ') ? '<a href="' + escapeHtml(getVal(item, 'ไฟล์ประกอบ')) + '" target="_blank" class="text-xs text-blue-600 underline mt-2 block font-bold">📄 ดูไฟล์เดิมที่แนบไว้</a>' : '') + '</div>' +
+               '<input type="hidden" name="วันที่บันทึก" value="' + escapeHtml(getVal(item, 'วันที่บันทึก')) + '">' +
+               '<div class="md:col-span-2"><label class="input-label">หมายเหตุ</label><textarea name="หมายเหตุ" class="form-input" rows="2">' + escapeHtml(getVal(item, 'หมายเหตุ')) + '</textarea></div>';
+      }
+      else if (currentSection === 'elearning') {
+        html = '<div class="md:col-span-2"><label class="input-label">หน่วยจัด/องค์กร <span class="text-red-500">*</span></label><input type="text" name="หน่วยจัด/องค์กร" value="' + escapeHtml(getVal(item, 'หน่วยจัด/องค์กร')) + '" class="form-input" required></div>' +
+               '<div class="md:col-span-2"><label class="input-label">หัวข้อ/หลักสูตรที่เรียน <span class="text-red-500">*</span></label><input type="text" name="หัวข้อ/หลักสูตรที่เรียน" value="' + escapeHtml(getVal(item, 'หัวข้อ/หลักสูตรที่เรียน')) + '" class="form-input" required></div>' +
+               '<div><label class="input-label text-blue-600">คะแนน หมวด 1</label><input type="number" step="0.01" min="0" name="คะแนน หมวด 1" value="' + escapeHtml(getVal(item, 'คะแนน หมวด 1')) + '" class="form-input border-blue-200"></div>' +
+               '<div><label class="input-label text-red-600">คะแนน หมวด 2</label><input type="number" step="0.01" min="0" name="คะแนน หมวด 2" value="' + escapeHtml(getVal(item, 'คะแนน หมวด 2')) + '" class="form-input border-red-200"></div>' +
+               '<div class="md:col-span-2"><label class="input-label">Link หลักสูตร</label><input type="url" name="link หลักสูตร" value="' + escapeHtml(getVal(item, 'link หลักสูตร')) + '" class="form-input" placeholder="https://..."></div>' +
+               '<div class="md:col-span-2"><label class="input-label text-green-700">อัปโหลดภาพประกอบ (ไม่เกิน 3MB)</label><input type="file" accept="image/*" onchange="encodeFile(this, \'ภาพประกอบ\')" class="form-input bg-gray-50 text-xs"><input type="hidden" name="ภาพประกอบ" id="val_ภาพประกอบ" value="' + escapeHtml(getVal(item, 'ภาพประกอบ')) + '">' +
+               (getVal(item, 'ภาพประกอบ') ? '<a href="' + escapeHtml(getVal(item, 'ภาพประกอบ')) + '" target="_blank" class="text-xs text-blue-600 underline mt-2 block font-bold">📄 ดูภาพเดิมที่แนบไว้</a>' : '') + '</div>' +
+               '<div><label class="input-label">ผู้บันทึก <span class="text-red-500">*</span></label><input type="text" name="ผู้บันทึก" value="' + escapeHtml(getVal(item, 'ผู้บันทึก')) + '" class="form-input" required></div>' +
+               '<input type="hidden" name="วันที่บันทึก" value="' + escapeHtml(getVal(item, 'วันที่บันทึก')) + '">' +
+               '<div class="md:col-span-2"><label class="input-label">หมายเหตุ</label><textarea name="หมายเหตุ" class="form-input" rows="2">' + escapeHtml(getVal(item, 'หมายเหตุ')) + '</textarea></div>';
+      }
+      else {
+        var stat = getVal(item, 'สถานะการดำเนินงาน');
+        html = '<div class="md:col-span-2"><label class="input-label">ปัญหาและข้อสังเกต <span class="text-red-500">*</span></label><textarea name="ปัญหาและข้อสังเกตในการตรวจ" class="form-input" rows="3" required>' + escapeHtml(getVal(item, 'ปัญหาและข้อสังเกตในการตรวจ')) + '</textarea></div>' +
+               '<div class="md:col-span-2"><label class="input-label">ข้อเสนอ</label><textarea name="ข้อเสนอ" class="form-input" rows="2">' + escapeHtml(getVal(item, 'ข้อเสนอ')) + '</textarea></div>' +
+               '<div><label class="input-label">สถานะ</label><select name="สถานะการดำเนินงาน" class="form-input"><option value="รอดำเนินการ" ' + (stat === 'รอดำเนินการ' ? 'selected' : '') + '>รอดำเนินการ</option><option value="ปรับปรุงแล้ว" ' + (stat === 'ปรับปรุงแล้ว' ? 'selected' : '') + '>ปรับปรุงแล้ว</option></select></div>' +
+               '<div><label class="input-label">ผู้บันทึก <span class="text-red-500">*</span></label><input type="text" name="ผู้บันทึก" value="' + escapeHtml(getVal(item, 'ผู้บันทึก')) + '" class="form-input" required></div>' +
+               '<div class="md:col-span-2"><label class="input-label text-green-700">แนบภาพปัญหา (ไม่เกิน 3MB)</label><input type="file" onchange="encodeFile(this, \'ภาพปัญหา\')" class="form-input bg-gray-50 text-xs"><input type="hidden" name="ภาพปัญหา" id="val_ภาพปัญหา" value="' + escapeHtml(getVal(item, 'ภาพปัญหา')) + '">' +
+               (getVal(item, 'ภาพปัญหา') ? '<a href="' + escapeHtml(getVal(item, 'ภาพปัญหา')) + '" target="_blank" class="text-xs text-blue-600 underline mt-2 block font-bold">📄 ดูภาพเดิมที่แนบไว้</a>' : '') + '</div>' +
+               '<input type="hidden" name="วันที่บันทึก" value="' + escapeHtml(getVal(item, 'วันที่บันทึก')) + '">';
+      }
+
+      fields.innerHTML = html;
+      document.body.classList.add('modal-active');
+      document.getElementById('modalForm').classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function encodeFile(el, id) {
+      var file = el.files[0];
+      var allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'application/pdf'];
+      if (!file) return;
+      if (allowed.indexOf(file.type) === -1) {
+        Swal.fire('ไฟล์ไม่รองรับ', 'กรุณาอัปโหลดเฉพาะไฟล์รูปภาพหรือ PDF', 'error');
+        el.value = ''; return;
+      }
+      if (file.size >= 3 * 1024 * 1024) {
+        Swal.fire('ไฟล์ใหญ่เกินไป', 'กรุณาอัปโหลดไฟล์ขนาดไม่เกิน 3MB', 'error');
+        el.value = ''; return;
+      }
+      var reader = new FileReader();
+      reader.onloadend = function() { document.getElementById('val_' + id).value = reader.result; };
+      reader.readAsDataURL(file);
+    }
+
+    function closeModal() {
+      document.body.classList.remove('modal-active');
+      document.getElementById('modalForm').classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    document.getElementById('activeForm').onsubmit = function(e) {
+      e.preventDefault();
+      var form = document.getElementById('activeForm');
+      var fd = {};
+      for (var i = 0; i < form.elements.length; i++) {
+        if (form.elements[i].name) fd[form.elements[i].name] = form.elements[i].value;
+      }
+      var sheetMapping = { 'other': 'other', 'elearning': 'E-learning', 'comment': 'Comment' };
+
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('submitBtn').innerText = 'กำลังบันทึก...';
+      Swal.fire({ title: 'กำลังบันทึก...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+
+      apiPost({ action: 'processData', sheetName: sheetMapping[currentSection], rowId: fd.rowId, formData: fd }).then(function(res) {
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('submitBtn').innerText = 'บันทึกข้อมูล';
+        if (res.status === 'success') { Swal.fire('สำเร็จ', res.message, 'success'); closeModal(); loadContent(); }
+        else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+      });
+    };
+
+    /* ==================================================================
+     *  EXPORT
+     * ================================================================== */
+
+    function exportCSV() {
+      if (!filteredData || filteredData.length === 0) {
+        Swal.fire('ไม่มีข้อมูล', 'ไม่มีข้อมูลให้ export ในขณะนี้', 'info');
+        return;
+      }
+      var cols = COLUMN_DEFS[currentSection];
+      var rows = [cols.map(function(c) { return c.label; }).join(',')];
+      filteredData.forEach(function(item) {
+        var row = cols.map(function(c) {
+          var v = String(getVal(item, c.key)).replace(/"/g, '""');
+          return '"' + v + '"';
+        });
+        rows.push(row.join(','));
+      });
+      var csv = '\uFEFF' + rows.join('\n'); // BOM เพื่อให้ Excel อ่านภาษาไทยถูกต้อง
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = currentSection + '_export_' + new Date().getTime() + '.csv';
+      link.click();
+    }
+  </script>
 </body>
 </html>
